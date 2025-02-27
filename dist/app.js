@@ -1,22 +1,11 @@
-import { Telegraf, Scenes, session } from "telegraf";
 import dotenv from "dotenv";
+import { Scenes, Telegraf, session } from "telegraf";
+import { newHomeWizard } from "./Scenes/newHomeWizard.js";
+import { UserInteractions } from "./constants.ts/index.js";
 dotenv.config();
-const newHomeWizard = new Scenes.WizardScene("newHomeWizard", async (ctx) => {
-    await ctx.reply("¿Cuál es el nombre que le quieres dar a tu hogar 🏠?");
-    return ctx.wizard.next();
-}, async (ctx) => {
-    if (!ctx.message || !("text" in ctx.message)) {
-        await ctx.reply("Por favor, envía un nombre válido para tu hogar.");
-        return;
-    }
-    ctx.session.__scenes.homeName = ctx.message.text;
-    console.log(ctx.session.__scenes.homeName);
-    return ctx.scene.leave();
-});
 const bot = new Telegraf(process.env.BOT_TELEGRAM_API_KEY);
-const stage = new Scenes.Stage([newHomeWizard]);
-bot.use(session());
-bot.use(stage.middleware());
+const wizarStage = new Scenes.Stage([]);
+wizarStage.register(newHomeWizard);
 bot.start((ctx) => ctx.reply("¡Hola! 👋🏡\n\nBienvenido/a a *CheckHome*, la app diseñada para hacer tu vida en casa más fácil. 🏠💡\n\n" +
     "¿Compartes gastos con tus compañeros de piso o familia? ¡No te preocupes! Aquí podrás:\n" +
     "✅ Llevar un control claro de los gastos.\n✅ Dividir cuentas de manera justa.\n✅ Evitar malentendidos y olvidos.\n\n" +
@@ -35,7 +24,9 @@ bot.help((ctx) => ctx.reply("📌 *Lista de comandos disponibles:*\n\n" +
     "/mypayments - Muestra tus pagos registrados.\n" +
     "/members - Gestiona los integrantes de la casa.\n" +
     "/config - Configura preferencias del bot.", { parse_mode: "Markdown" }));
-bot.command("newhome", (ctx) => ctx.scene.enter("newHomeWizard"));
+wizarStage.hears(UserInteractions.NEW_HOME, (ctx) => ctx.scene.enter("newHomeWizard"));
+bot.use(session());
+bot.use(wizarStage.middleware());
 bot.launch();
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
