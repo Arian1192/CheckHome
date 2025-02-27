@@ -9,7 +9,8 @@ const newHomeWizard = new Scenes.WizardScene("newHomeWizard", async (ctx) => {
         await ctx.reply("Por favor, envía un nombre válido para tu hogar.");
         return;
     }
-    console.log(ctx.session);
+    ctx.session.__scenes.homeName = ctx.message.text;
+    console.log(ctx.session.__scenes.homeName);
     return ctx.scene.leave();
 });
 const bot = new Telegraf(process.env.BOT_TELEGRAM_API_KEY);
