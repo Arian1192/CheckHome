@@ -1,5 +1,6 @@
 export const SceneIDS = Object.freeze({
     NEW_HOME_WIZARD: "newHomeWizard",
+    NEW_BUDDY_WIZARD: "inviteNewFellaWizard",
 });
 export const UserInteractions = Object.freeze({
     NEW_HOME: "/newhome",

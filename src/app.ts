@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 import { Context, Scenes, Telegraf, session } from "telegraf";
+import { UserInteractions } from "./Constants.ts/index.js";
+import { inviteNewFellaWizard } from "./Scenes/inviteNewFellaWizard.js";
 import { newHomeWizard } from "./Scenes/newHomeWizard.js";
-import { UserInteractions } from "./constants.ts/index.js";
 dotenv.config();
 
 // Configuración del bot
@@ -11,6 +12,7 @@ const bot = new Telegraf<Scenes.SceneContext>(
 const wizarStage = new Scenes.Stage<Scenes.SceneContext>([]);
 // Registrar el wizar de creación de nuevo hogar.
 wizarStage.register(newHomeWizard);
+wizarStage.register(inviteNewFellaWizard);
 
 bot.start((ctx: Context) =>
   ctx.reply(
@@ -23,27 +25,43 @@ bot.start((ctx: Context) =>
   )
 );
 
-bot.help((ctx: Context) =>
-  ctx.reply(
-    "📌 *Lista de comandos disponibles:*\n\n" +
+bot.help(async (ctx: Context) => {
+  try {
+    const chat = await ctx.getChat();
+    const userId = ctx.from?.id;
+    const user = await ctx.telegram.getChatMember(chat.id, userId!);
+    const userRole = user.status;
+
+    let message =
+      "📌 *Lista de comandos disponibles:*\n\n" +
       "/start - Inicia el bot y muestra el mensaje de bienvenida.\n" +
       "/help - Muestra esta lista de comandos.\n" +
-      "/newhome - Crea un hogar para gestionar los gastos compartidos.\n" +
-      "/newbuddy - Añade un compañero a la casa.\n" +
       "/newexpense - Añade un nuevo gasto (puedes subir un ticket o ingresar manualmente).\n" +
       "/viewbills - Muestra la lista de gastos registrados.\n" +
       "/balance - Muestra el balance actual entre los miembros.\n" +
       "/pay - Registra un pago entre miembros.\n" +
       "/mydebts - Muestra tus deudas pendientes.\n" +
-      "/mypayments - Muestra tus pagos registrados.\n" +
-      "/members - Gestiona los integrantes de la casa.\n" +
-      "/config - Configura preferencias del bot.",
-    { parse_mode: "Markdown" }
-  )
-);
+      "/mypayments - Muestra tus pagos registrados.\n";
+    if (userRole === "creator" || userRole === "administrator") {
+      message +=
+        "\n👑 *Comandos de Administrador:*\n" +
+        "/newhome - Crea un hogar para gestionar los gastos compartidos.\n" +
+        "/newbuddy - Añade un compañero a la casa.\n" +
+        "/members - Gestiona los integrantes de la casa.\n" +
+        "/config - Configura preferencias del bot.";
+    }
+    await ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error) {
+    console.error("Error obteniendo el rol del usuario:", error);
+    await ctx.reply("❌ Ocurrió un error al obtener tu rol. Intenta de nuevo.");
+  }
+});
 
 wizarStage.hears(UserInteractions.NEW_HOME, (ctx) =>
   ctx.scene.enter("newHomeWizard")
+);
+wizarStage.hears(UserInteractions.NEW_BUDDY, (ctx) =>
+  ctx.scene.enter("inviteNewFellaWizard")
 );
 
 bot.use(session());

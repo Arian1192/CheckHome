@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { Scenes } from "telegraf";
-import { SceneIDS } from "../constants.ts/index.js";
+import { SceneIDS } from "../Constants.ts/index.js";
 const prisma = new PrismaClient();
 const newHomeWizard = new Scenes.WizardScene(SceneIDS.NEW_HOME_WIZARD, async (ctx) => {
     ctx.reply("¡Vamos a crear un nuevo hogar! 🏡🔑\n\nPor favor, ingresa el nombre de tu hogar:");
@@ -32,8 +32,6 @@ const newHomeWizard = new Scenes.WizardScene(SceneIDS.NEW_HOME_WIZARD, async (ct
 }, async (ctx) => {
     if (ctx.callbackQuery) {
         ctx.wizard.state.homeCurrency = ctx.callbackQuery.data;
-        const { username, first_name, phone } = ctx.from;
-        console.log(ctx.from);
     }
     else {
         ctx.wizard.state.homeCurrency = "EUR";
@@ -41,6 +39,35 @@ const newHomeWizard = new Scenes.WizardScene(SceneIDS.NEW_HOME_WIZARD, async (ct
     }
     await ctx.reply(`¡Entendido! Los gastos se manejarán en *${ctx.wizard.state.homeCurrency}*.`);
     await ctx.reply(`¡Hogar creado con éxito! 🎉\n\nNombre: *${ctx.wizard.state.homeName}*\nDirección: *${ctx.wizard.state.homeAddress}*\nMoneda: *${ctx.wizard.state.homeCurrency}*`, { parse_mode: "Markdown" });
+    const { username, first_name, last_name, id, language_code } = ctx.from;
+    const { homeName, homeAddress, homeCurrency } = ctx.wizard.state;
+    await prisma.$transaction(async (tx) => {
+        try {
+            const { id: homeId } = await tx.home.create({
+                data: {
+                    homeName,
+                    homeAddress,
+                    homeCurrency: homeCurrency,
+                },
+            });
+            const { id: userId } = await tx.user.create({
+                data: {
+                    id,
+                    username,
+                    first_name,
+                    last_name,
+                    language_code,
+                },
+            });
+            await tx.homeUser.create({
+                data: { homeId, userId, role: Role.ADMIN },
+            });
+        }
+        catch (error) {
+            console.error(error);
+            throw new Error("Error al crear el hogar.");
+        }
+    });
     await ctx.reply(`¡Listo! Ahora puedes agregar a los miembros de tu hogar con el comando /addmember.\n\nPor mi parte acabo de asignarte como administrador del hogar, por lo que solo tu podrás gestionar ciertas acciones dentro del hogar.`);
     return ctx.scene.leave();
 });
