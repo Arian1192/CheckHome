@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES6", // Versión de JavaScript a la que compilar
-    "module": "CommonJS", // Sistema de módulos (usar CommonJS para Node.js)
-    "moduleResolution": "node", // Resolución de módulos para Node.js
-    "esModuleInterop": true, // Permite la interoperabilidad entre módulos CommonJS y ES
-    "strict": true, // Habilita todas las opciones de tipo estricto
-    "outDir": "./dist", // Carpeta de salida para los archivos compilados
-    "rootDir": "./src" // Carpeta de entrada para los archivos TypeScript
+    "module": "NodeNext",
+    "outDir": "dist",
+    "target": "ESNext",
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "alwaysStrict": true,
+    "removeComments": true,
   },
   "include": [
     "src/**/*"
