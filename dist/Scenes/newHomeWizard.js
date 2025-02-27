@@ -1,5 +1,7 @@
+import { PrismaClient } from "@prisma/client";
 import { Scenes } from "telegraf";
 import { SceneIDS } from "../constants.ts/index.js";
+const prisma = new PrismaClient();
 const newHomeWizard = new Scenes.WizardScene(SceneIDS.NEW_HOME_WIZARD, async (ctx) => {
     ctx.reply("¡Vamos a crear un nuevo hogar! 🏡🔑\n\nPor favor, ingresa el nombre de tu hogar:");
     return ctx.wizard.next();
@@ -30,6 +32,8 @@ const newHomeWizard = new Scenes.WizardScene(SceneIDS.NEW_HOME_WIZARD, async (ct
 }, async (ctx) => {
     if (ctx.callbackQuery) {
         ctx.wizard.state.homeCurrency = ctx.callbackQuery.data;
+        const { username, first_name, phone } = ctx.from;
+        console.log(ctx.from);
     }
     else {
         ctx.wizard.state.homeCurrency = "EUR";

@@ -1,5 +1,8 @@
+import { Currency, PrismaClient } from "@prisma/client";
 import { Scenes } from "telegraf";
 import { SceneIDS } from "../constants.ts/index.js";
+
+const prisma = new PrismaClient();
 
 const newHomeWizard = new Scenes.WizardScene<any>(
   SceneIDS.NEW_HOME_WIZARD,
@@ -61,6 +64,33 @@ const newHomeWizard = new Scenes.WizardScene<any>(
       `¡Hogar creado con éxito! 🎉\n\nNombre: *${ctx.wizard.state.homeName}*\nDirección: *${ctx.wizard.state.homeAddress}*\nMoneda: *${ctx.wizard.state.homeCurrency}*`,
       { parse_mode: "Markdown" }
     );
+    // Esto deberia ser una transacción primero crear el hogar y luego asignar el usuario como admin
+    const { username, first_name, last_name, id } = ctx.from;
+    const { homeName, homeAddress, homeCurrency } = ctx.wizard.state;
+    const result = await prisma.$transaction([
+      prisma.home.create({
+        data: { homeName, homeAddress, homeCurrency: homeCurrency as Currency },
+      }),
+      prisma.user.create({
+        data: {
+          id,
+          username,
+          first_name,
+          last_name,
+        },
+      }),
+    ]);
+
+    if (result !== null) {
+      await prisma.homeUser.create({
+        data: {
+          userId: result["1"].id,
+          homeId: result["0"].id,
+          role: "ADMIN",
+        },
+      });
+    }
+
     await ctx.reply(
       `¡Listo! Ahora puedes agregar a los miembros de tu hogar con el comando /addmember.\n\nPor mi parte acabo de asignarte como administrador del hogar, por lo que solo tu podrás gestionar ciertas acciones dentro del hogar.`
     );
