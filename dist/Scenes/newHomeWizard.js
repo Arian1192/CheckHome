@@ -41,10 +41,13 @@ const newHomeWizard = new Scenes.WizardScene(SceneIDS.NEW_HOME_WIZARD, async (ct
     await ctx.reply(`¡Hogar creado con éxito! 🎉\n\nNombre: *${ctx.wizard.state.homeName}*\nDirección: *${ctx.wizard.state.homeAddress}*\nMoneda: *${ctx.wizard.state.homeCurrency}*`, { parse_mode: "Markdown" });
     const { username, first_name, last_name, id, language_code } = ctx.from;
     const { homeName, homeAddress, homeCurrency } = ctx.wizard.state;
+    const chat = await ctx.telegram.getChat(ctx.chat.id);
+    const telegramId = chat.id;
     await prisma.$transaction(async (tx) => {
         try {
             const { id: homeId } = await tx.home.create({
                 data: {
+                    telegramId,
                     homeName,
                     homeAddress,
                     homeCurrency: homeCurrency,

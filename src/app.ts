@@ -1,18 +1,22 @@
 import dotenv from "dotenv";
 import { Context, Scenes, Telegraf, session } from "telegraf";
+import { message } from "telegraf/filters";
 import { UserInteractions } from "./Constants.ts/index.js";
 import { inviteNewFellaWizard } from "./Scenes/inviteNewFellaWizard.js";
+import { newBuddyJoinGroup } from "./Scenes/newBuddyJoinGroup.js";
 import { newHomeWizard } from "./Scenes/newHomeWizard.js";
 dotenv.config();
 
 // Configuración del bot
+
 const bot = new Telegraf<Scenes.SceneContext>(
   process.env.BOT_TELEGRAM_API_KEY!
 );
-const wizarStage = new Scenes.Stage<Scenes.SceneContext>([]);
-// Registrar el wizar de creación de nuevo hogar.
-wizarStage.register(newHomeWizard);
-wizarStage.register(inviteNewFellaWizard);
+const wizardStage = new Scenes.Stage<Scenes.SceneContext>([]);
+
+wizardStage.register(newHomeWizard);
+wizardStage.register(inviteNewFellaWizard);
+wizardStage.register(newBuddyJoinGroup);
 
 bot.start((ctx: Context) =>
   ctx.reply(
@@ -57,15 +61,30 @@ bot.help(async (ctx: Context) => {
   }
 });
 
-wizarStage.hears(UserInteractions.NEW_HOME, (ctx) =>
+wizardStage.hears(UserInteractions.NEW_HOME, (ctx) =>
   ctx.scene.enter("newHomeWizard")
 );
-wizarStage.hears(UserInteractions.NEW_BUDDY, (ctx) =>
+wizardStage.hears(UserInteractions.NEW_BUDDY, (ctx) =>
   ctx.scene.enter("inviteNewFellaWizard")
 );
+wizardStage.on(message("new_chat_members"), async (ctx) => {
+  const newMembers = ctx.message?.new_chat_members;
+  if (newMembers) {
+    for (const member of newMembers) {
+      await ctx.reply(
+        `¡Hola, ${member.first_name}! 👋🏡\n\n¡Bienvenido/a! 🎉\n\n` +
+          "¡Es un placer tenerte en casa! 🏠💡\n\n" +
+          "Vamos a guardar tu usuario y vincularlo al hogar para que gestiones tus gastos y puedas realizar pagos 😊",
+        { parse_mode: "Markdown" }
+      );
+    }
+  }
+
+  ctx.scene.enter("newBuddyJoinGroup");
+});
 
 bot.use(session());
-bot.use(wizarStage.middleware());
+bot.use(wizardStage.middleware());
 bot.launch();
 
 // Detener el bot de forma segura

@@ -29,6 +29,7 @@ model Home {
   homeName    String
   homeAddress String
   homeCurrency Currency
+  telegramId  BigInt     // Este atributo corresponde al id del grupo de Telegram. Debe ser único
   homeBuddies HomeUser[]  // Relación uno a muchos con HomeUser
 }
 
